@@ -14,12 +14,4 @@ services:
       - DATABASE_URL=sqlite:///app.db
       - SECRET_KEY=your-secret-key-here
       - DOCKER_ENV=true
-    depends_on:
-      - db
-    restart: unless-stopped
-
-  db:
-    image: sqlite:latest
-    volumes:
-      - ./data:/data
     restart: unless-stopped 

@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -14,16 +14,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
-# Create uploads directory
+# Create uploads directory with proper permissions
 RUN mkdir -p static/uploads && chmod 777 static/uploads
 
 # Set environment variables
 ENV FLASK_APP=app.py
-ENV FLASK_ENV=production
+ENV FLASK_ENV=development
 ENV PYTHONUNBUFFERED=1
 
 # Expose the port
 EXPOSE 5000
 
 # Run the application
-CMD ["python", "app.py"] 
+CMD ["flask", "run", "--host=0.0.0.0"] 
