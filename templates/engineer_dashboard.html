@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Engineer Dashboard</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <h3>Assigned Projects</h3>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Project Name</th>
+                        <th>Description</th>
+                        <th>Assigned At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assignment in assignments %}
+                    <tr>
+                        <td>{{ assignment.project.name }}</td>
+                        <td>{{ assignment.project.description }}</td>
+                        <td>{{ assignment.assigned_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <a href="/submit_report?project_id={{ assignment.project.id }}&report_type=progress" class="btn btn-primary btn-sm">Progress Report</a>
+                            <a href="/submit_report?project_id={{ assignment.project.id }}&report_type=damage" class="btn btn-warning btn-sm">Damage Report</a>
+                            <a href="/submit_report?project_id={{ assignment.project.id }}&report_type=bills" class="btn btn-info btn-sm">Bills Report</a>
+                            <a href="/submit_report?project_id={{ assignment.project.id }}&report_type=supply" class="btn btn-success btn-sm">Supply Report</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Report Submission Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Submit Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reportForm" method="POST" action="{{ url_for('project_api.api_submit_report') }}" enctype="multipart/form-data">
+                    <input type="hidden" id="projectId" name="project_id">
+                    <input type="hidden" id="reportType" name="report_type">
+                    
+                    <div class="mb-3">
+                        <label for="reportDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="reportDescription" name="description" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reportPhotos" class="form-label">Photos</label>
+                        <input type="file" class="form-control" id="reportPhotos" name="photos" multiple accept="image/*" required>
+                        <div id="photoPreview" class="mt-2 row"></div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Submit Report</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function submitReport(projectId, reportType) {
+    document.getElementById('projectId').value = projectId;
+    document.getElementById('reportType').value = reportType;
+    document.getElementById('reportForm').action = "{{ url_for('project_api.api_submit_report') }}";
+    
+    const modal = new bootstrap.Modal(document.getElementById('reportModal'));
+    modal.show();
+}
+
+document.getElementById('reportPhotos').addEventListener('change', function(e) {
+    const preview = document.getElementById('photoPreview');
+    preview.innerHTML = '';
+    
+    for (const file of e.target.files) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const col = document.createElement('div');
+            col.className = 'col-md-3 mb-2';
+            col.innerHTML = `
+                <img src="${e.target.result}" class="img-thumbnail" style="height: 150px; object-fit: cover;">
+            `;
+            preview.appendChild(col);
+        }
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+{% endblock %} 

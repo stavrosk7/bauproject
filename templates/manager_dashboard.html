@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Project Manager Dashboard</h2>
+    </div>
+    <div class="col text-end">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newProjectModal">Create New Project</button>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newEngineerModal">Add New Engineer</button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <h3>My Projects</h3>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Project Name</th>
+                        <th>Description</th>
+                        <th>Created At</th>
+                        <th>Assigned Engineers</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                    <tr>
+                        <td>{{ project.name }}</td>
+                        <td>{{ project.description }}</td>
+                        <td>{{ project.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            {% for assignment in project.assignments %}
+                                {{ assignment.engineer.username }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="viewProjectReports({{ project.id }})">View Reports</button>
+                            <button class="btn btn-sm btn-warning" onclick="assignEngineers({{ project.id }})">Assign Engineer</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProject({{ project.id }})">Delete Project</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- New Project Modal -->
+<div class="modal fade" id="newProjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Project</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newProjectForm" method="POST" action="{{ url_for('project_api.create_project') }}">
+                    <div class="mb-3">
+                        <label for="projectName" class="form-label">Project Name</label>
+                        <input type="text" class="form-control" id="projectName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="projectDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="projectDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Engineer Modal -->
+<div class="modal fade" id="newEngineerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Engineer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newEngineerForm" method="POST" action="{{ url_for('project_api.create_engineer') }}">
+                    <div class="mb-3">
+                        <label for="engineerUsername" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="engineerUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="engineerPassword" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="engineerPassword" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Engineer Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- List of Engineers Modal -->
+<div class="modal fade" id="engineersListModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">My Engineers</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="engineersList">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Reports Modal -->
+<div class="modal fade" id="projectReportsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Project Reports</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" id="reportTabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#progress">Progress Reports</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#damage">Damage Reports</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#bills">Bills Reports</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#supply">Supply Reports</a>
+                    </li>
+                </ul>
+                <div class="tab-content mt-3">
+                    <div class="tab-pane fade show active" id="progress"></div>
+                    <div class="tab-pane fade" id="damage"></div>
+                    <div class="tab-pane fade" id="bills"></div>
+                    <div class="tab-pane fade" id="supply"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function viewProjectReports(projectId) {
+    const modal = new bootstrap.Modal(document.getElementById('projectReportsModal'));
+    
+    // Fetch reports for each type
+    ['progress', 'damage', 'bills', 'supply'].forEach(type => {
+        fetch(`/api/project/${projectId}/reports/${type}`)
+            .then(response => response.json())
+            .then(data => {
+                const tabContent = document.getElementById(type);
+                tabContent.innerHTML = generateReportHTML(data);
+            })
+            .catch(error => console.error('Error fetching reports:', error));
+    });
+    
+    modal.show();
+}
+
+function generateReportHTML(reports) {
+    if (!reports.length) {
+        return '<p class="text-muted">No reports available.</p>';
+    }
+    
+    return reports.map(report => `
+        <div class="card mb-3">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">
+                    ${new Date(report.created_at).toLocaleDateString()}
+                </h6>
+                <p class="card-text">${report.description}</p>
+                <p class="card-text">
+                    <strong>Location:</strong> 
+                    <a href="https://www.google.com/maps?q=${report.latitude},${report.longitude}" 
+                       target="_blank" class="text-primary">
+                        ${report.latitude}, ${report.longitude}
+                    </a>
+                </p>
+                <div class="row">
+                    ${report.photos.map(photo => `
+                        <div class="col-md-3 mb-2">
+                            <img src="/static/uploads/${photo.filename}" 
+                                 class="img-thumbnail" 
+                                 style="height: 150px; object-fit: cover;"
+                                 onclick="showFullImage(this.src)">
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function showFullImage(src) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="${src}" class="img-fluid">
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    modal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(modal);
+    });
+}
+
+function assignEngineers(projectId) {
+    fetch(`/api/project/${projectId}/available-engineers`)
+        .then(response => response.json())
+        .then(engineers => {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Assign Engineers</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="assignEngineersForm">
+                                ${engineers.map(engineer => `
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="engineers" value="${engineer.id}" 
+                                               id="engineer${engineer.id}">
+                                        <label class="form-check-label" for="engineer${engineer.id}">
+                                            ${engineer.username}
+                                        </label>
+                                    </div>
+                                `).join('')}
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary" onclick="saveEngineerAssignments(${projectId})">
+                                Save Assignments
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            const modalInstance = new bootstrap.Modal(modal);
+            modalInstance.show();
+            modal.addEventListener('hidden.bs.modal', () => {
+                document.body.removeChild(modal);
+            });
+        })
+        .catch(error => console.error('Error fetching engineers:', error));
+}
+
+function saveEngineerAssignments(projectId) {
+    const form = document.getElementById('assignEngineersForm');
+    const selectedEngineers = Array.from(form.querySelectorAll('input[name="engineers"]:checked'))
+        .map(input => input.value);
+    
+    fetch(`/api/project/${projectId}/assign-engineers`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ engineers: selectedEngineers })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error assigning engineers');
+        }
+    })
+    .catch(error => console.error('Error saving assignments:', error));
+}
+
+function deleteProject(projectId) {
+    if (confirm('Are you sure you want to delete this project? This will also delete all reports and photos associated with it.')) {
+        fetch(`/api/project/${projectId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting project: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting project');
+        });
+    }
+}
+
+function deleteEngineer(engineerId) {
+    if (confirm('Are you sure you want to delete this engineer? This will also delete all their reports and photos.')) {
+        fetch(`/api/engineer/${engineerId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting engineer: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting engineer');
+        });
+    }
+}
+
+// Add button to show engineers list
+document.querySelector('.col.text-end').innerHTML += `
+    <button class="btn btn-info" onclick="showEngineersList()">View Engineers</button>
+`;
+
+function showEngineersList() {
+    fetch('/api/engineers')
+        .then(response => response.json())
+        .then(engineers => {
+            const tbody = document.getElementById('engineersList');
+            tbody.innerHTML = engineers.map(engineer => `
+                <tr>
+                    <td>${engineer.username}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteEngineer(${engineer.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+            const modal = new bootstrap.Modal(document.getElementById('engineersListModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading engineers list');
+        });
+}
+</script>
+{% endblock %} 

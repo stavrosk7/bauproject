@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+      - ./static/uploads:/app/static/uploads
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
+      - DATABASE_URL=sqlite:///app.db
+      - SECRET_KEY=your-secret-key-here
+      - DOCKER_ENV=true
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: sqlite:latest
+    volumes:
+      - ./data:/data
+    restart: unless-stopped 
